@@ -247,14 +247,14 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
     if (msg.sender === "loading") {
       return (
         <div className="flex gap-3 justify-start" key={msg.id}>
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full text-white h-8 w-8 flex items-center justify-center">
+          <div className="p-2 bg-gradient-to-r from-slate-700 to-slate-800 rounded-full text-white h-8 w-8 flex items-center justify-center">
             <Bot className="w-4 h-4" />
           </div>
-          <div className="max-w-[75%] p-4 bg-gray-100 rounded-lg rounded-bl-none flex items-center">
+          <div className="max-w-[75%] p-4 bg-slate-100 rounded-lg rounded-bl-none flex items-center">
             <div className="flex gap-1">
-              <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></span>
-              <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></span>
-              <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
+              <span className="w-2 h-2 bg-slate-700 rounded-full animate-bounce"></span>
+              <span className="w-2 h-2 bg-slate-700 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }}></span>
+              <span className="w-2 h-2 bg-slate-700 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
             </div>
           </div>
         </div>
@@ -264,14 +264,13 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
     return (
       <div key={msg.id} className={`flex gap-3 ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
         {msg.sender === "bot" && (
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full text-white h-8 w-8 flex items-center justify-center">
+          <div className="p-2 bg-gradient-to-r from-slate-700 to-slate-800 rounded-full text-white h-8 w-8 flex items-center justify-center">
             <Bot className="w-4 h-4" />
           </div>
         )}
         <div
-          className={`max-w-[75%] p-4 rounded-lg ${
-            msg.sender === "user" ? "bg-blue-600 text-white rounded-br-none" : "bg-gray-100 text-gray-900 rounded-bl-none"
-          }`}
+          className={`max-w-[75%] p-4 rounded-lg ${msg.sender === "user" ? "bg-slate-700 text-white rounded-br-none" : "bg-slate-100 text-slate-900 rounded-bl-none"
+            }`}
         >
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
@@ -289,7 +288,7 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
           </p>
         </div>
         {msg.sender === "user" && (
-          <div className="p-2 bg-blue-600 rounded-full text-white h-8 w-8 flex items-center justify-center">
+          <div className="p-2 bg-slate-700 rounded-full text-white h-8 w-8 flex items-center justify-center">
             <User className="w-4 h-4" />
           </div>
         )}
@@ -303,7 +302,7 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg">
+            <div className="p-2 bg-gradient-to-r from-slate-700 to-slate-800 text-white rounded-lg">
               <Bot className="w-5 h-5" />
             </div>
             <div>
@@ -347,8 +346,8 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
         {/* CHAT MESSAGES */}
         <div className="space-y-4 mb-6 min-h-[400px] max-h-[500px] overflow-y-auto pr-2">
           {messages.length === 0 ? (
-            <div className="flex flex-col h-64 justify-center items-center text-gray-500 space-y-4">
-              <Bot className="w-12 h-12 text-blue-500" />
+            <div className="flex flex-col h-64 justify-center items-center text-slate-500 space-y-4">
+              <Bot className="w-12 h-12 text-slate-700" />
               <p className="font-medium">Start a conversation with Azure CloudOps Agent</p>
             </div>
           ) : (
@@ -383,7 +382,7 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
             <Button
               disabled={!prompt.trim() || isLoading}
               onClick={handleSend}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-slate-700 text-white hover:bg-slate-800"
             >
               {isLoading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />

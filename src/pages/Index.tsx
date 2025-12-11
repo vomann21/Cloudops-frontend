@@ -76,7 +76,7 @@ const Index = () => {
     return await res.json();
   };
 
-  
+
   const handleResourceActionClick = (prompt: string) => {
     setSelectedPrompt(prompt);
   };
@@ -87,7 +87,7 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="text-center pt-12 mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-sophisticated bg-clip-text text-transparent mb-4 leading-tight py-1">
+        <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4 leading-tight">
           Chat with CloudOps Agent
         </h1>
         <p className="text-lg text-muted-foreground">
@@ -111,7 +111,7 @@ const Index = () => {
               ))}
             </div>
           ) : (
-            <ResourceManagementCards 
+            <ResourceManagementCards
               onCardClick={handleResourceActionClick}
               onBackClick={handleBackClick}
             />
