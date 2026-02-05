@@ -3,7 +3,7 @@
 import { useMsal } from "@azure/msal-react";
 import { useEffect, useState } from "react";
 import ChatInterface from "./ChatInterface"; // assuming same folder
-
+import DashboardPage from "./DashboardModal";
 export default function ChatPage() {
   const { accounts } = useMsal();
   const [prompt, setPrompt] = useState("");
@@ -18,6 +18,6 @@ export default function ChatPage() {
   if (accounts.length === 0) {
     return <p>Redirecting...</p>;
   }
-
+  
   return <ChatInterface prompt={prompt} setPrompt={setPrompt} />;
 }

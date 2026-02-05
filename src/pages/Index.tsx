@@ -7,7 +7,7 @@ import { MsalProvider } from "@azure/msal-react";
 import { msalConfig } from "@/auth/authConfig";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { loginRequest } from "@/auth/authConfig";
-
+import DashboardPage from "@/components/DashboardModal";
 
 const Index = () => {
   const [selectedPrompt, setSelectedPrompt] = useState("");
@@ -95,18 +95,20 @@ const Index = () => {
         </p>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-12">
-        <div className="w-full max-w-4xl mb-12">
+      <div className="flex-1 flex flex-col items-center px-6 pb-12">
+        <div className="w-full max-w-4xl mb-8">
           {!showResourceManagement ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto">
-              {features.map((feature, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-auto">
+              {features.map((feature) => (
                 <FeatureCard
                   key={feature.title}
                   title={feature.title}
                   description={feature.description}
                   prompt={feature.prompt}
                   icon={feature.icon}
-                  onClick={(prompt) => handleCardClick(prompt, feature.title === "Resource Management")}
+                  onClick={(prompt) =>
+                    handleCardClick(prompt, feature.title === "Resource Management")
+                  }
                 />
               ))}
             </div>
@@ -118,22 +120,15 @@ const Index = () => {
           )}
         </div>
 
-        <div className="w-full max-w-4xl">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-semibold text-foreground mb-2">
-              Start Your Conversation
-            </h2>
-            <p className="text-muted-foreground text-sm">
-              {selectedPrompt ? "Your prompt is ready - customize it or send as is" : "Type your question or select a capability above"}
-            </p>
-          </div>
-
+        {/* CHAT + COMMENTARY */}
+        <div className="w-full max-w-7xl">
           <ChatInterface
             prompt={selectedPrompt}
             setPrompt={setSelectedPrompt}
           />
         </div>
       </div>
+
     </div>
   );
 };
