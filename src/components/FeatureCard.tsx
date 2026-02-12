@@ -31,19 +31,19 @@ export function FeatureCard({ title, description, prompt, icon, onClick }: Featu
       className="group relative overflow-hidden bg-gradient-card border border-input-border shadow-card hover:shadow-sophisticated transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:bg-card-hover h-full flex flex-col"
       onClick={handleClick}
     >
-      <div className="p-4 flex flex-col h-full">
-        <div className="flex items-start justify-between mb-3">
+      <div className="p-3 flex flex-col h-full">
+        <div className="flex items-start justify-between mb-2">
           <div className="p-1.5 rounded-lg bg-gradient-sophisticated text-primary-foreground shadow-sophisticated">
-            {React.cloneElement(icon as React.ReactElement, { className: "w-5 h-5" })}
+            {React.cloneElement(icon as React.ReactElement, { className: "w-4 h-4" })}
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300 group-hover:transform group-hover:translate-x-1" />
         </div>
 
-        <h3 className="text-base font-semibold text-card-foreground mb-1 group-hover:text-primary transition-colors duration-300">
+        <h3 className="text-sm font-semibold text-card-foreground mb-0.5 group-hover:text-primary transition-colors duration-300">
           {title}
         </h3>
 
-        <p className="text-xs text-muted-foreground leading-relaxed group-hover:text-card-foreground transition-colors duration-300 flex-grow">
+        <p className="text-[11px] text-muted-foreground leading-snug group-hover:text-card-foreground transition-colors duration-300 flex-grow">
           {description}
         </p>
       </div>

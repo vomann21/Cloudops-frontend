@@ -6,7 +6,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, AlertTriangle, User, CheckCircle2, Sparkles, RefreshCw } from "lucide-react";
+import { Calendar, Clock, AlertTriangle, User, CheckCircle2, Sparkles, RefreshCw, Activity } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -125,7 +125,18 @@ export default function TicketDetailModal({ open, onClose, ticket, recommendatio
                 </div>
 
                 <div className="flex justify-end gap-2 mt-2">
-                    {/* Action buttons could go here */}
+                    {(ticket.summary.toLowerCase().includes("cpu") ||
+                        ticket.description.toLowerCase().includes("cpu") ||
+                        ticket.summary.toLowerCase().includes("memory") ||
+                        ticket.description.toLowerCase().includes("memory")) && (
+                            <Button
+                                className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+                                onClick={() => window.open("http://localhost:8501/", "_blank")}
+                            >
+                                <Activity className="w-4 h-4" />
+                                Predictive Analysis
+                            </Button>
+                        )}
                 </div>
             </DialogContent>
         </Dialog>

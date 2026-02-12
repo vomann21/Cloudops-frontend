@@ -128,9 +128,9 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
   useEffect(() => {
     const fetchCommentary = async () => {
       try {
-        const res = await fetch("https://d2c9121a4258.ngrok-free.app/updates", {
+        const res = await fetch("http://localhost:3978/updates", {
           headers: {
-            "ngrok-skip-browser-warning": "true",
+            // "ngrok-skip-browser-warning": "true",
             "User-Agent": "MyApp"
           }
         });
@@ -648,7 +648,7 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
               <AccordionContent className="px-2 pb-3">
                 <Select onValueChange={(val) => handleTicketClick(val, criticalTickets)}>
                   <SelectTrigger className="w-full border-red-200 bg-red-50">
-                    <SelectValue placeholder="View critical Incidents..." />
+                    <SelectValue placeholder="View critical tickets..." />
                   </SelectTrigger>
                   <SelectContent>
                     {criticalTickets.map(ticket => (
@@ -866,12 +866,12 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
             <div className="space-y-4 mb-6 min-h-[400px] max-h-[500px] overflow-y-auto pr-2 relative">
               {messages.length === 0 ? (
                 showSummary ? (
-                  <div className="flex flex-col gap-6 animate-in fade-in duration-500 p-4">
-                    <div className="flex flex-col gap-2">
-                      <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  <div className="flex flex-col gap-3 animate-in fade-in duration-500 p-2">
+                    <div className="flex flex-col gap-0.5">
+                      <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {activeAccount?.name?.split(' ')[0] || 'User'}
                       </h1>
-                      <p className="text-slate-500">Here is your operational briefing for today.</p>
+                      <p className="text-slate-500 text-xs italic">Here is your operational briefing for today.</p>
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">
@@ -913,12 +913,12 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
                     </div>
 
                     {/* Recent Highlights */}
-                    <div className="p-4 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h4 className="flex items-center gap-2 font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wider">
-                        <Activity className="w-4 h-4 text-sky-500" />
+                    <div className="p-3 rounded-xl border border-slate-100 bg-slate-50/50">
+                      <h4 className="flex items-center gap-2 font-semibold text-slate-700 mb-2 text-xs uppercase tracking-wider">
+                        <Activity className="w-3.5 h-3.5 text-sky-500" />
                         Recent Live Updates
                       </h4>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {briefingMessages.map((msg, i) => (
                           <div key={`briefing-${i}`} className="flex gap-3 items-start text-sm text-slate-700 font-medium">
                             <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
@@ -927,14 +927,14 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
                         ))}
                         <div className="border-t border-slate-100 my-2 pt-2">
                           {shortLiveMessages.map((msg, i) => (
-                            <div key={`live-${i}`} className="flex gap-3 items-start text-sm text-slate-500 mb-2">
-                              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
-                              <span className="leading-relaxed">{msg}</span>
+                            <div key={`live-${i}`} className="flex gap-2 items-start text-[13px] text-slate-500 mb-1.5">
+                              <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-300 shrink-0" />
+                              <span className="leading-normal">{msg}</span>
                             </div>
                           ))}
                         </div>
                         {shortLiveMessages.length === 0 && briefingMessages.length === 0 && (
-                          <p className="text-xs text-slate-400 italic">No recent updates...</p>
+                          <p className="text-[11px] text-slate-400 italic">No recent updates...</p>
                         )}
                       </div>
                     </div>

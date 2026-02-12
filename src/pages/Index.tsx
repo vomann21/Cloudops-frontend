@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { FeatureCard } from "@/components/FeatureCard";
 import ChatInterface from "@/components/ChatInterface";
-import { ResourceManagementCards } from "@/components/ResourceManagementCards";
-import { DollarSign, Server, Search } from "lucide-react";
 import { MsalProvider } from "@azure/msal-react";
 import { msalConfig } from "@/auth/authConfig";
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
@@ -11,29 +8,8 @@ import DashboardPage from "@/components/DashboardModal";
 
 const Index = () => {
   const [selectedPrompt, setSelectedPrompt] = useState("");
-  const [showResourceManagement, setShowResourceManagement] = useState(false);
   const { instance, accounts } = useMsal();
   const isAuthenticated = useIsAuthenticated();
-  const features = [
-    {
-      title: "Resource Management",
-      description: "Provision, start, stop, scale, or delete Azure resources with intelligent automation.",
-      prompt: "Start my VM named test-vm and check its current status.",
-      icon: <Server className="w-6 h-6" />,
-    },
-    {
-      title: "Resource Query",
-      description: "List and explore existing Azure resources across subscriptions with detailed insights.",
-      prompt: "List all storage accounts in East US region with their usage metrics.",
-      icon: <Search className="w-6 h-6" />,
-    },
-    {
-      title: "FinOps Advisor",
-      description: "Analyze Azure costs, estimate spend, and suggest optimizations to reduce your cloud expenses.",
-      prompt: "Show me cost trends for the last 30 days and suggest optimizations.",
-      icon: <DollarSign className="w-6 h-6" />,
-    },
-  ];
 
   const handleLogin = async () => {
     try {
@@ -56,13 +32,6 @@ const Index = () => {
     return response.accessToken;
   };
 
-  const handleCardClick = (prompt: string, isResourceManagement = false) => {
-    if (isResourceManagement) {
-      setShowResourceManagement(true);
-    } else {
-      setSelectedPrompt(prompt);
-    }
-  };
 
 
   const handleSendMessage = async (prompt: string) => {
@@ -77,48 +46,21 @@ const Index = () => {
   };
 
 
-  const handleResourceActionClick = (prompt: string) => {
-    setSelectedPrompt(prompt);
-  };
 
-  const handleBackClick = () => setShowResourceManagement(false);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <div className="text-center pt-12 mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4 leading-tight">
+      <div className="text-center pt-4 mb-2">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-0.5 leading-tight">
           Chat with CloudOps Agent
         </h1>
-        <p className="text-lg text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Intelligent cloud operations powered by AI
         </p>
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-6 pb-12">
-        <div className="w-full max-w-4xl mb-8">
-          {!showResourceManagement ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 h-auto">
-              {features.map((feature) => (
-                <FeatureCard
-                  key={feature.title}
-                  title={feature.title}
-                  description={feature.description}
-                  prompt={feature.prompt}
-                  icon={feature.icon}
-                  onClick={(prompt) =>
-                    handleCardClick(prompt, feature.title === "Resource Management")
-                  }
-                />
-              ))}
-            </div>
-          ) : (
-            <ResourceManagementCards
-              onCardClick={handleResourceActionClick}
-              onBackClick={handleBackClick}
-            />
-          )}
-        </div>
+      <div className="flex-1 flex flex-col items-center px-6 pb-2">
 
         {/* CHAT + COMMENTARY */}
         <div className="w-full max-w-7xl">
