@@ -11,6 +11,7 @@ import parseHtml from "html-react-parser";
 import { useMsal } from "@azure/msal-react";
 import { loginRequest } from "@/auth/authConfig";
 import DashboardModal from "./DashboardModal";
+import BriefingContent from "./BriefingContent";
 import { BarChart3 } from "lucide-react";
 
 // New Components
@@ -30,6 +31,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Download, FileChartLine } from "lucide-react";
+import { jsPDF } from "jspdf";
 
 // LLM UI
 import {
@@ -62,6 +73,20 @@ interface CommentaryItem {
   priority?: string;
 }
 
+interface DailyReportData {
+  date: string;
+  assignedToday: {
+    count: number;
+    tickets: Array<{ key: string; summary: string }>;
+  };
+  resolvedToday: {
+    count: number;
+    tickets: Array<{ key: string; summary: string }>;
+  };
+  chatbotActions: number;
+  userName: string;
+}
+
 // ---------------------------------------------------------------------------
 // MOCK DATA FOR TICKETS
 // ---------------------------------------------------------------------------
@@ -91,7 +116,7 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
   const [isLoading, setIsLoading] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
   const [highlighter, setHighlighter] = useState<any>(null);
-  const [showDashboard, setShowDashboard] = useState(true);
+  const [showDashboard, setShowDashboard] = useState(false);
 
   // Updates / Commentary
   const [commentary, setCommentary] = useState<CommentaryItem[]>([]);
@@ -101,6 +126,11 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [showSummary, setShowSummary] = useState(true);
   const [recommendationCache, setRecommendationCache] = useState<Record<string, string>>({});
+
+  // Daily Report State
+  const [dailyReport, setDailyReport] = useState<DailyReportData | null>(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isReportLoading, setIsReportLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -222,16 +252,18 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
         const data = await res.json();
         console.log("Health issues", data.serviceHealth)
         // Map backend → UI Ticket shape
-        const mappedMy: Ticket[] = data.myAndGroupTickets.map((t: any) => ({
-          id: t.key,
-          summary: t.summary,
-          description: t.description || `Assigned to ${t.assignee} • Status: ${t.status}`,
-          time: t.created ? new Date(t.created).toLocaleDateString() : "Recent",
-          created: t.created,
-          priority: (t.priority || "low").toLowerCase(),
-          status: t.status.toLowerCase().includes("progress") ? "in-progress" : "open",
-          reporter: t.assignee,
-        }));
+        const mappedMy: Ticket[] = data.myAndGroupTickets
+          .filter((t: any) => t.assignee === activeAccount?.name)
+          .map((t: any) => ({
+            id: t.key,
+            summary: t.summary,
+            description: t.description || `Assigned to ${t.assignee} • Status: ${t.status}`,
+            time: t.created ? new Date(t.created).toLocaleDateString() : "Recent",
+            created: t.created,
+            priority: (t.priority || "low").toLowerCase(),
+            status: t.status.toLowerCase().includes("progress") ? "in-progress" : "open",
+            reporter: t.assignee,
+          }));
 
         const mappedCritical: Ticket[] = data.highCritical.map((t: any) => ({
           id: t.key,
@@ -392,6 +424,7 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
 
     setMessages((prev) => [...prev, userMsg]);
     setPrompt("");
+    setShowSummary(false); // Hide briefing when chat starts/continues
     setIsLoading(true);
 
     const loadingMsg: Message = {
@@ -459,6 +492,97 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
     } catch (e) {
       console.warn("Backend reset failed:", e);
     }
+  };
+
+  const handleFetchDailyReport = async () => {
+    setIsReportLoading(true);
+    try {
+      const res = await fetch("http://localhost:3978/api/daily_report");
+      const data = await res.json();
+      setDailyReport(data);
+      setIsReportModalOpen(true);
+    } catch (err) {
+      console.error("Failed to fetch daily report", err);
+    } finally {
+      setIsReportLoading(false);
+    }
+  };
+
+  const handleDownloadReport = () => {
+    if (!dailyReport) return;
+
+    const doc = new jsPDF();
+    const margin = 20;
+    let y = 20;
+
+    // Title
+    doc.setFontSize(20);
+    doc.setTextColor(30, 64, 175); // Blue-800
+    doc.text(`DAILY REPORT - ${dailyReport.date}`, margin, y);
+    y += 15;
+
+    // User Info
+    doc.setFontSize(12);
+    doc.setTextColor(71, 85, 105); // Slate-600
+    doc.text(`User: ${dailyReport.userName}`, margin, y);
+    y += 10;
+    doc.text(`Date: ${dailyReport.date}`, margin, y);
+    y += 20;
+
+    // Summary Section
+    doc.setFontSize(16);
+    doc.setTextColor(30, 41, 59); // Slate-900
+    doc.text("SUMMARY", margin, y);
+    y += 10;
+
+    doc.setFontSize(12);
+    doc.text(`- Tickets Assigned Today: ${dailyReport.assignedToday.count}`, margin + 5, y);
+    y += 10;
+    doc.text(`- Tickets Resolved Today: ${dailyReport.resolvedToday.count}`, margin + 5, y);
+    y += 10;
+    doc.text(`- Chatbot Actions: ${dailyReport.chatbotActions}`, margin + 5, y);
+    y += 20;
+
+    // Assigned Today Details
+    doc.setFontSize(16);
+    doc.text("DETAILS - ASSIGNED TODAY", margin, y);
+    y += 10;
+    doc.setFontSize(10);
+    if (dailyReport.assignedToday.tickets.length > 0) {
+      dailyReport.assignedToday.tickets.forEach(t => {
+        doc.text(`[${t.key}] ${t.summary}`, margin + 5, y);
+        y += 7;
+        if (y > 280) { doc.addPage(); y = 20; }
+      });
+    } else {
+      doc.text("None", margin + 5, y);
+      y += 10;
+    }
+    y += 10;
+
+    // Resolved Today Details
+    doc.setFontSize(16);
+    doc.text("DETAILS - RESOLVED TODAY", margin, y);
+    y += 10;
+    doc.setFontSize(10);
+    if (dailyReport.resolvedToday.tickets.length > 0) {
+      dailyReport.resolvedToday.tickets.forEach(t => {
+        doc.text(`[${t.key}] ${t.summary}`, margin + 5, y);
+        y += 7;
+        if (y > 280) { doc.addPage(); y = 20; }
+      });
+    } else {
+      doc.text("None", margin + 5, y);
+      y += 10;
+    }
+
+    // Footer
+    y = 280;
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184); // Slate-400
+    doc.text("Generated by Cloudops AI Copilot", margin, y);
+
+    doc.save(`Daily_Report_${dailyReport.date}.pdf`);
   };
 
   // ------------------------------------------------------
@@ -540,9 +664,25 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
         {/* 2) LEFT SIDEBAR — ACCORDION */}
         <div className="w-1/3 bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="p-3 border-b border-gray-100 bg-slate-50 rounded-t-lg">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-blue-600" />
-              Operations Center
+            <h3 className="font-semibold text-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-blue-600" />
+                Operations Center
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
+                onClick={handleFetchDailyReport}
+                disabled={isReportLoading}
+              >
+                {isReportLoading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Daily Report
+              </Button>
             </h3>
           </div>
 
@@ -574,8 +714,8 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="mt-2 space-y-2">
-                  {myTickets.slice(0, 2).map(t => (
+                <div className="mt-2 space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {myTickets.map(t => (
                     <div
                       key={t.id}
                       className={`text-xs p-2 border rounded cursor-pointer hover:opacity-80 transition-colors ${getTicketAgeColor(t.created)}`}
@@ -619,8 +759,8 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="mt-2 space-y-2">
-                  {myRfcTickets.slice(0, 2).map(t => (
+                <div className="mt-2 space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {myRfcTickets.map(t => (
                     <div
                       key={t.id}
                       className={`text-xs p-2 border rounded cursor-pointer hover:opacity-80 transition-colors ${getTicketAgeColor(t.created)}`}
@@ -833,10 +973,9 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
                     {/* Toggle Summary Button */}
                     <Button
                       size="sm"
-                      variant={(showSummary && messages.length === 0) ? "secondary" : "outline"}
+                      variant={showSummary ? "secondary" : "outline"}
                       onClick={() => setShowSummary(!showSummary)}
-                      disabled={messages.length > 0}
-                      title={messages.length > 0 ? "Clear chat to view summary" : "Toggle Summary"}
+                      title="View Summary"
                     >
                       <Sparkles className="w-4 h-4 mr-1 text-blue-500" />
                       Briefing
@@ -864,87 +1003,21 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
 
             {/* CHAT MESSAGES */}
             <div className="space-y-4 mb-6 min-h-[400px] max-h-[500px] overflow-y-auto pr-2 relative">
-              {messages.length === 0 ? (
-                showSummary ? (
-                  <div className="flex flex-col gap-3 animate-in fade-in duration-500 p-2">
-                    <div className="flex flex-col gap-0.5">
-                      <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 18 ? 'Afternoon' : 'Evening'}, {activeAccount?.name?.split(' ')[0] || 'User'}
-                      </h1>
-                      <p className="text-slate-500 text-xs italic">Here is your operational briefing for today.</p>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3">
-                      {/* Critical Card */}
-                      <div className="p-3 rounded-xl border border-red-100 bg-gradient-to-br from-red-50 to-white shadow-sm hover:shadow-md transition-shadow cursor-default">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="p-1.5 rounded-full bg-red-100 text-red-600">
-                            <AlertTriangle className="w-4 h-4" />
-                          </div>
-                          <span className="font-semibold text-red-900 text-xs">Critical</span>
-                        </div>
-                        <div className="text-2xl font-bold text-slate-800 mb-0.5">{criticalTickets.length}</div>
-                        <p className="text-[10px] text-red-700 font-medium truncate">Active Incidents</p>
-                      </div>
-
-                      {/* Workload Card */}
-                      <div className="p-3 rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white shadow-sm hover:shadow-md transition-shadow cursor-default">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="p-1.5 rounded-full bg-blue-100 text-blue-600">
-                            <FileText className="w-4 h-4" />
-                          </div>
-                          <span className="font-semibold text-blue-900 text-xs">Workload</span>
-                        </div>
-                        <div className="text-2xl font-bold text-slate-800 mb-0.5">{myTickets.length}</div>
-                        <p className="text-[10px] text-blue-700 font-medium truncate">Assigned Jira</p>
-                      </div>
-
-                      {/* RFC Card */}
-                      <div className="p-3 rounded-xl border border-purple-100 bg-gradient-to-br from-purple-50 to-white shadow-sm hover:shadow-md transition-shadow cursor-default">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="p-1.5 rounded-full bg-purple-100 text-purple-600">
-                            <Calendar className="w-4 h-4" />
-                          </div>
-                          <span className="font-semibold text-purple-900 text-xs">Upcoming RFC</span>
-                        </div>
-                        <div className="text-2xl font-bold text-slate-800 mb-0.5">{upcomingRfcTickets.length}</div>
-                        <p className="text-[10px] text-purple-700 font-medium truncate">Next 48 Hours</p>
-                      </div>
-                    </div>
-
-                    {/* Recent Highlights */}
-                    <div className="p-3 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <h4 className="flex items-center gap-2 font-semibold text-slate-700 mb-2 text-xs uppercase tracking-wider">
-                        <Activity className="w-3.5 h-3.5 text-sky-500" />
-                        Recent Live Updates
-                      </h4>
-                      <div className="space-y-2">
-                        {briefingMessages.map((msg, i) => (
-                          <div key={`briefing-${i}`} className="flex gap-3 items-start text-sm text-slate-700 font-medium">
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                            <span className="leading-relaxed">{msg}</span>
-                          </div>
-                        ))}
-                        <div className="border-t border-slate-100 my-2 pt-2">
-                          {shortLiveMessages.map((msg, i) => (
-                            <div key={`live-${i}`} className="flex gap-2 items-start text-[13px] text-slate-500 mb-1.5">
-                              <span className="mt-1.5 w-1 h-1 rounded-full bg-slate-300 shrink-0" />
-                              <span className="leading-normal">{msg}</span>
-                            </div>
-                          ))}
-                        </div>
-                        {shortLiveMessages.length === 0 && briefingMessages.length === 0 && (
-                          <p className="text-[11px] text-slate-400 italic">No recent updates...</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col h-64 justify-center items-center text-slate-500 space-y-4">
-                    <Bot className="w-12 h-12 text-slate-700" />
-                    <p className="font-medium">Start a conversation with Azure CloudOps Agent</p>
-                  </div>
-                )
+              {showSummary ? (
+                <BriefingContent
+                  activeAccountName={activeAccount?.name}
+                  criticalTickets={criticalTickets}
+                  myTickets={myTickets}
+                  upcomingRfcTickets={upcomingRfcTickets}
+                  briefingMessages={briefingMessages}
+                  shortLiveMessages={shortLiveMessages}
+                  onClose={messages.length > 0 ? () => setShowSummary(false) : undefined}
+                />
+              ) : messages.length === 0 ? (
+                <div className="flex flex-col h-64 justify-center items-center text-slate-500 space-y-4">
+                  <Bot className="w-12 h-12 text-slate-700" />
+                  <p className="font-medium">Start a conversation with Azure CloudOps Agent</p>
+                </div>
               ) : (
                 messages.map(renderMessage)
               )}
@@ -995,7 +1068,7 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
             open={showDashboard}
             onClose={() => setShowDashboard(false)}
           />
-
+          {/* 5) TICKET DETAIL MODAL */}
           <TicketDetailModal
             open={isTicketModalOpen}
             onClose={() => setIsTicketModalOpen(false)}
@@ -1003,6 +1076,92 @@ export default function ChatInterface({ prompt, setPrompt }: ChatInterfaceProps)
             recommendation={selectedTicket ? recommendationCache[selectedTicket.id] : undefined}
             onUpdateRecommendation={(id, rec) => setRecommendationCache(prev => ({ ...prev, [id]: rec }))}
           />
+
+          {/* 6) DAILY REPORT MODAL */}
+          <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  Daily Activity Summary
+                </DialogTitle>
+                <DialogDescription>
+                  Performance report for {dailyReport?.date}
+                </DialogDescription>
+              </DialogHeader>
+
+              {dailyReport && (
+                <div className="space-y-6 py-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card className="p-4 bg-blue-50 border-blue-100 flex flex-col items-center justify-center text-center">
+                      <span className="text-2xl font-bold text-blue-700">{dailyReport.assignedToday.count}</span>
+                      <span className="text-[10px] font-medium text-blue-600 uppercase tracking-tight">Assigned Today</span>
+                    </Card>
+                    <Card className="p-4 bg-emerald-50 border-emerald-100 flex flex-col items-center justify-center text-center">
+                      <span className="text-2xl font-bold text-emerald-700">{dailyReport.resolvedToday.count}</span>
+                      <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-tight">Resolved Today</span>
+                    </Card>
+                    <Card className="p-4 bg-purple-50 border-purple-100 flex flex-col items-center justify-center text-center">
+                      <span className="text-2xl font-bold text-purple-700">{dailyReport.chatbotActions}</span>
+                      <span className="text-[10px] font-medium text-purple-600 uppercase tracking-tight">Bot Actions</span>
+                    </Card>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-slate-400" />
+                        Tickets Assigned Today
+                      </h4>
+                      <div className="bg-slate-50 rounded-lg p-3 max-h-[120px] overflow-y-auto border border-slate-100">
+                        {dailyReport.assignedToday.tickets.length > 0 ? (
+                          <ul className="space-y-2">
+                            {dailyReport.assignedToday.tickets.map(t => (
+                              <li key={t.key} className="text-xs flex justify-between gap-2">
+                                <span className="font-medium text-slate-700">{t.key}</span>
+                                <span className="text-slate-500 truncate text-right">{t.summary}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-slate-400 italic">No tickets assigned today</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-emerald-400" />
+                        Tickets Resolved Today
+                      </h4>
+                      <div className="bg-emerald-50/30 rounded-lg p-3 max-h-[120px] overflow-y-auto border border-emerald-100">
+                        {dailyReport.resolvedToday.tickets.length > 0 ? (
+                          <ul className="space-y-2">
+                            {dailyReport.resolvedToday.tickets.map(t => (
+                              <li key={t.key} className="text-xs flex justify-between gap-2">
+                                <span className="font-medium text-emerald-700">{t.key}</span>
+                                <span className="text-emerald-600 truncate text-right">{t.summary}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-xs text-slate-400 italic">No tickets resolved today</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>Close</Button>
+                <Button className="gap-2" onClick={handleDownloadReport}>
+                  <Download className="w-4 h-4" />
+                  Download Report
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </Card>
       </div>
     </div>
